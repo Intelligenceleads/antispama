@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Deque, Dict, Tuple
 
 from aiogram import Bot, Dispatcher, F
+from aiogram.client.default import DefaultBotProperties          # <-- НОВЫЙ ИМПОРТ
 from aiogram.enums import ChatMemberStatus, ParseMode
 from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
 from aiogram.filters import Command
@@ -25,7 +26,7 @@ DEFAULT_THRESHOLD = int(os.getenv("SPAM_THRESHOLD", "5"))
 SETTINGS_FILE = Path(os.getenv("SETTINGS_FILE", "settings.json"))
 
 if not BOT_TOKEN:
-    raise RuntimeError("BOT_TOKEN не задан в .env")
+    raise RuntimeError("BOT_TOKEN не задан в .env или переменных окружения")
 
 logging.basicConfig(
     level=logging.INFO,
@@ -252,7 +253,6 @@ async def moderate_message(message: Message) -> None:
     if not settings["enabled"] or not message.from_user:
         return
 
-    # Явно доверяем назначенному администратору и Telegram-админам чата.
     if message.from_user.id == ADMIN_ID or await is_chat_admin(message.bot, message.from_user.id):
         return
 
@@ -267,7 +267,11 @@ async def moderate_message(message: Message) -> None:
 
 
 async def main() -> None:
-    bot = Bot(token=BOT_TOKEN, parse_mode=ParseMode.HTML)
+    # ✅ ИСПРАВЛЕННАЯ ИНИЦИАЛИЗАЦИЯ БОТА
+    bot = Bot(
+        token=BOT_TOKEN,
+        default=DefaultBotProperties(parse_mode=ParseMode.HTML)
+    )
     me = await bot.get_me()
     logger.info("Запущен @%s (%s)", me.username, me.id)
     logger.info("Чат антиспама: %s, админ: %s", CHAT_ID, ADMIN_ID)
@@ -276,3 +280,10 @@ async def main() -> None:
 
 if __name__ == "__main__":
     asyncio.run(main())
+
+
+
+   
+  
+
+
